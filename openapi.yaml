@@ -1,0 +1,101 @@
+openapi: 3.0.3
+info:
+  title: TicketBAI Gateway API
+  version: 1.0.0
+  description: |
+    Unified API for TicketBAI invoice generation, signing, and submission.
+
+servers:
+  - url: https://api.yourgateway.com
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /invoices:
+    post:
+      summary: Submit invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invoiceNumber, issueDate, customer, lines]
+              properties:
+                invoiceNumber: { type: string }
+                issueDate: { type: string, format: date }
+                customer:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    nif: { type: string }
+                lines:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      description: { type: string }
+                      quantity: { type: number }
+                      unitPrice: { type: number }
+                vat:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      rate: { type: number }
+                      base: { type: number }
+                idempotencyKey: { type: string }
+      responses:
+        "200":
+          description: Invoice accepted for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoiceId: { type: string }
+                  status: { type: string }
+
+  /invoices/{id}:
+    get:
+      summary: Get invoice status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invoice status
+
+  /applications:
+    post:
+      summary: Create application
+      description: Registers a new client application under a tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, tenantId]
+              properties:
+                name: { type: string }
+                tenantId: { type: string }
+      responses:
+        "201":
+          description: Application created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  apiKey: { type: string }

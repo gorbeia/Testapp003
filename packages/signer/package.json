@@ -1,0 +1,13 @@
+{
+  "name": "@tbai/signing-node",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@tbai/core": "*",
+    "xadesjs": "^2.3.6",
+    "@xmldom/xmldom": "^0.8.10",
+    "xpath": "^0.0.34",
+    "@peculiar/webcrypto": "^1.4.5",
+    "node-forge": "^1.3.1"
+  }
+}

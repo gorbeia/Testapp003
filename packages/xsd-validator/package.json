@@ -1,0 +1,8 @@
+{
+  "name": "@tbai/xsd-validator",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "libxmljs2": "^0.31.0"
+  }
+}

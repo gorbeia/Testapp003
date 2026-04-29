@@ -1,0 +1,58 @@
+name: TicketBAI Compliance CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Install xmllint
+        run: sudo apt-get install -y libxml2-utils
+
+      - name: Validate Bizkaia XML
+        run: pnpm run test:xsd:bizkaia
+
+      - name: Validate Gipuzkoa XML
+        run: pnpm run test:xsd:gipuzkoa
+
+      - name: Validate Álava XML
+        run: pnpm run test:xsd:alava
+
+      - name: Run hash tests
+        run: pnpm test:hash
+
+      - name: Validate XAdES signatures
+        run: pnpm test:signature
+
+      - name: End-to-end invoice generation test
+        run: pnpm test:e2e
+
+      - name: Fail if validation errors exist
+        run: |
+          if [ -f "validation-errors.log" ]; then
+            echo "Compliance errors detected"
+            exit 1
+          fi

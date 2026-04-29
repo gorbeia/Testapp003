@@ -1,0 +1,9 @@
+{
+  "name": "@tbai/storage-postgres",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@tbai/core": "*",
+    "pg": "^8.11.0"
+  }
+}

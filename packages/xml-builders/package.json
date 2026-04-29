@@ -1,0 +1,10 @@
+{
+  "name": "@tbai/xml-builders",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@tbai/core": "*",
+    "xmlbuilder2": "^3.1.1"
+  }
+}
