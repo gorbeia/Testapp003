@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@tbai/core": "*",
+    "@tbai/core": "workspace:*",
     "xadesjs": "^2.3.6",
     "@xmldom/xmldom": "^0.8.10",
     "xpath": "^0.0.34",

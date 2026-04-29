@@ -4,7 +4,7 @@
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "@tbai/core": "*",
+    "@tbai/core": "workspace:*",
     "xmlbuilder2": "^3.1.1"
   }
 }

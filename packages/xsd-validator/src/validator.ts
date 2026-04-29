@@ -1,6 +1,7 @@
+import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
-import libxml from "libxmljs2";
+import os from "os";
 
 export type Province = "bizkaia" | "gipuzkoa" | "alava";
 
@@ -10,30 +11,30 @@ export type XsdValidationResult = {
 };
 
 export class XsdValidator {
-  private schemas: Record<Province, libxml.Document>;
-
-  constructor(basePath: string) {
-    this.schemas = {
-      bizkaia: this.loadSchema(basePath, "bizkaia"),
-      gipuzkoa: this.loadSchema(basePath, "gipuzkoa"),
-      alava: this.loadSchema(basePath, "alava"),
-    };
-  }
-
-  private loadSchema(basePath: string, province: Province) {
-    const file = path.join(basePath, province, "ticketbai.xsd");
-    const xsd = fs.readFileSync(file, "utf-8");
-    return libxml.parseXml(xsd);
-  }
+  constructor(private schemaBasePath: string) {}
 
   validate(xml: string, province: Province): XsdValidationResult {
+    const schemaFile = path.join(this.schemaBasePath, province, "ticketbai.xsd");
+
+    if (!fs.existsSync(schemaFile)) {
+      return { valid: false, errors: [`Schema file not found: ${schemaFile}`] };
+    }
+
+    const tmp = path.join(os.tmpdir(), `tbai-${Date.now()}.xml`);
     try {
-      const xmlDoc = libxml.parseXml(xml);
-      const valid = xmlDoc.validate(this.schemas[province]);
-      if (valid) return { valid: true, errors: [] };
-      return { valid: false, errors: xmlDoc.validationErrors.map(e => e.message) };
+      fs.writeFileSync(tmp, xml, "utf-8");
+      execSync(`xmllint --noout --schema ${schemaFile} ${tmp} 2>&1`, { encoding: "utf-8" });
+      return { valid: true, errors: [] };
     } catch (err: any) {
-      return { valid: false, errors: ["XSD validation error: " + err.message] };
+      const output: string = err.stdout ?? err.message ?? "";
+      const errors = output
+        .split("\n")
+        .filter(l => l.includes("error") || l.includes("Error"))
+        .map(l => l.trim())
+        .filter(Boolean);
+      return { valid: false, errors: errors.length ? errors : [output.trim()] };
+    } finally {
+      try { fs.unlinkSync(tmp); } catch { /* ignore */ }
     }
   }
 }
