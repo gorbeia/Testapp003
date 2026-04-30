@@ -15,22 +15,31 @@ export type InvoiceLine = {
 export type Totals = {
   totalAmount: number;
   taxAmount?: number;
+  baseAmount?: number;
+  vatAmount?: number;
 };
 
 export type Invoice = {
   id: string;
   tenantId: string;
+  series: string;
   number: string;
   issueDate: string; // ISO date (YYYY-MM-DD)
   issuer: Party;
   recipient?: Party;
   lines: InvoiceLine[];
   totals: Totals;
+  type?: "STANDARD" | "CORRECTIVE";
+  corrective?: {
+    originalInvoiceId: string;
+    correctionType: string;
+  };
 };
 
 export type InvoiceRecord = {
   id: string;
   tenantId: string;
+  series: string;
   number: string;
   hash: string;
   previousHash?: string;
@@ -55,8 +64,7 @@ export interface Signer {
 
 export interface Storage {
   append(record: InvoiceRecord): Promise<void>;
-  getLast(tenantId: string): Promise<InvoiceRecord | null>;
+  getLast(tenantId: string, series: string): Promise<InvoiceRecord | null>;
 }
 
-export type InvoiceType = "STANDARD" | "CORRECTIVE";
 export type CorrectiveReason = "ERROR_AMOUNT" | "ERROR_TAX" | "ERROR_CLIENT" | "CANCELATION";

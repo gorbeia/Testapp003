@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder: download official schema via scripts/fetch-schemas.sh -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:ticketbai:emision"
+           xmlns="urn:ticketbai:emision"
+           elementFormDefault="qualified">
+  <xs:element name="TicketBai" type="xs:anyType"/>
+</xs:schema>

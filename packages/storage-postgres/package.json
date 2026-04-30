@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@tbai/core": "*",
+    "@tbai/core": "workspace:*",
     "pg": "^8.11.0"
   }
 }

@@ -5,8 +5,16 @@
   "dependencies": {
     "express": "^4.19.2",
     "pg": "^8.11.0",
-    "@tbai/core": "*",
-    "@tbai/storage-postgres": "*",
-    "@tbai/signing-node": "*"
+    "zod": "^3.23.8",
+    "pino": "^9.3.2",
+    "express-rate-limit": "^7.3.1",
+    "cors": "^2.8.5",
+    "@tbai/core": "workspace:*",
+    "@tbai/storage-postgres": "workspace:*",
+    "@tbai/signing-node": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "pino-pretty": "^11.2.1"
   }
 }

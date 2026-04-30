@@ -4,6 +4,10 @@
   "type": "module",
   "dependencies": {
     "express": "^4.19.2",
-    "pg": "^8.11.0"
+    "pg": "^8.11.0",
+    "pino": "^9.3.2"
+  },
+  "devDependencies": {
+    "pino-pretty": "^11.2.1"
   }
 }
