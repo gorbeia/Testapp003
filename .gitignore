@@ -5,3 +5,4 @@ dist
 logs
 certs
 backups
+*.js.map
