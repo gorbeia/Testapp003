@@ -1,9 +1,10 @@
 openapi: 3.0.3
 info:
   title: TicketBAI Gateway API
-  version: 1.0.0
+  version: 1.1.0
   description: |
-    Unified API for TicketBAI invoice generation, signing, and submission.
+    Unified API for TicketBAI invoice generation, signing, and submission
+    across all three Basque Country tax authorities (Bizkaia, Gipuzkoa, Álava).
 
 servers:
   - url: https://api.yourgateway.com
@@ -14,58 +15,178 @@ components:
       type: http
       scheme: bearer
 
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: "Unauthorized"
+
+    ValidationError:
+      type: object
+      required: [error, details]
+      properties:
+        error:
+          type: string
+          example: "Validation failed"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: array
+                items: { type: string }
+              message:
+                type: string
+
+    Party:
+      type: object
+      required: [name, nif]
+      properties:
+        name: { type: string, example: "Acme SL" }
+        nif: { type: string, example: "B12345678" }
+        address: { type: string, example: "Calle Mayor 1, Bilbao" }
+
+    InvoiceLine:
+      type: object
+      required: [description, quantity, unitPrice, total, vatRate]
+      properties:
+        description: { type: string, example: "Consultoría" }
+        quantity: { type: number, example: 2 }
+        unitPrice: { type: number, example: 500 }
+        total: { type: number, example: 1000 }
+        vatRate: { type: number, enum: [0, 4, 10, 21], example: 21 }
+
+    InvoiceRecord:
+      type: object
+      properties:
+        id: { type: string }
+        tenantId: { type: string }
+        series: { type: string, example: "A" }
+        number: { type: string, example: "A-2024-001" }
+        hash: { type: string }
+        previousHash: { type: string }
+        xml: { type: string }
+        signedXml: { type: string }
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt: { type: string, format: date-time }
+
 security:
   - ApiKeyAuth: []
 
 paths:
-  /invoices:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+              example:
+                status: ok
+
+  /invoice:
     post:
-      summary: Submit invoice
+      summary: Submit and process an invoice
+      description: |
+        Validates the invoice, builds the TicketBAI XML, signs it with XAdES-BES,
+        appends it to the hash chain, and enqueues it for submission to Hacienda.
+      parameters:
+        - name: X-Tenant-Id
+          in: header
+          required: true
+          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [invoiceNumber, issueDate, customer, lines]
+              required: [invoice, certificate]
               properties:
-                invoiceNumber: { type: string }
-                issueDate: { type: string, format: date }
-                customer:
+                invoice:
                   type: object
+                  required: [id, series, number, issueDate, issuer, lines, totals]
                   properties:
-                    name: { type: string }
-                    nif: { type: string }
+                    id: { type: string, example: "inv-001" }
+                    series: { type: string, example: "A" }
+                    number: { type: string, example: "A-2024-001" }
+                    issueDate: { type: string, format: date, example: "2024-01-15" }
+                    issuer: { $ref: "#/components/schemas/Party" }
+                    recipient: { $ref: "#/components/schemas/Party" }
+                    lines:
+                      type: array
+                      items: { $ref: "#/components/schemas/InvoiceLine" }
+                    totals:
+                      type: object
+                      required: [totalAmount]
+                      properties:
+                        totalAmount: { type: number, example: 1210 }
+                        taxAmount: { type: number, example: 210 }
+                        baseAmount: { type: number, example: 1000 }
+                        vatAmount: { type: number, example: 210 }
+                    type:
+                      type: string
+                      enum: [STANDARD, CORRECTIVE]
+                certificate:
+                  type: object
+                  required: [p12, password]
+                  properties:
+                    p12: { type: string, description: "Base64-encoded PKCS#12 file" }
+                    password: { type: string }
+            example:
+              invoice:
+                id: "inv-001"
+                series: "A"
+                number: "A-2024-001"
+                issueDate: "2024-01-15"
+                issuer: { name: "Acme SL", nif: "B12345678" }
                 lines:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      description: { type: string }
-                      quantity: { type: number }
-                      unitPrice: { type: number }
-                vat:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      rate: { type: number }
-                      base: { type: number }
-                idempotencyKey: { type: string }
+                  - description: "Consultoría"
+                    quantity: 2
+                    unitPrice: 500
+                    total: 1000
+                    vatRate: 21
+                totals: { totalAmount: 1210, baseAmount: 1000, vatAmount: 210 }
+              certificate:
+                p12: "MIIKHg..."
+                password: "secret"
       responses:
         "200":
           description: Invoice accepted for processing
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  invoiceId: { type: string }
-                  status: { type: string }
+              schema: { $ref: "#/components/schemas/InvoiceRecord" }
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationError" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /invoices/{id}:
     get:
-      summary: Get invoice status
+      summary: Get invoice status by ID
       parameters:
         - name: id
           in: path
@@ -73,11 +194,29 @@ paths:
           schema: { type: string }
       responses:
         "200":
-          description: Invoice status
+          description: Invoice details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InvoiceRecord" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: Invoice not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /applications:
     post:
-      summary: Create application
+      summary: Create application (register API key)
       description: Registers a new client application under a tenant
       requestBody:
         required: true
@@ -99,3 +238,86 @@ paths:
                 properties:
                   id: { type: string }
                   apiKey: { type: string }
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /dlq/{id}/retry:
+    post:
+      summary: Retry a dead-lettered job
+      description: Moves a DLQ entry back to tbai_jobs with status=pending and resets attempt_count
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Job re-queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  jobId: { type: string }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: DLQ entry not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /dlq/{id}:
+    delete:
+      summary: Discard a dead-lettered job permanently
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Entry deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: DLQ entry not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }

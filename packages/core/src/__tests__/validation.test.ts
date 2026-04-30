@@ -5,6 +5,7 @@ import type { Invoice } from "../types.js";
 const validInvoice: Invoice = {
   id: "1",
   tenantId: "t1",
+  series: "A",
   number: "F-001",
   issueDate: "2026-01-01",
   issuer: { name: "Test SL", nif: "A12345678" },
@@ -33,6 +34,66 @@ describe("validateInvoice", () => {
 
   it("throws when lines array is empty", () => {
     expect(() => validateInvoice({ ...validInvoice, lines: [] })).toThrow(/line/i);
+  });
+});
+
+describe("validateInvoice — series", () => {
+  it("throws when series is missing", () => {
+    expect(() => validateInvoice({ ...validInvoice, series: "" })).toThrow(/series/i);
+  });
+});
+
+describe("validateInvoice — per-line validation", () => {
+  const baseLine = { description: "Service", quantity: 1, unitPrice: 100, total: 100, vatRate: 21 };
+
+  it("throws when line description is empty", () => {
+    expect(() =>
+      validateInvoice({ ...validInvoice, lines: [{ ...baseLine, description: "" }] })
+    ).toThrow(/description/i);
+  });
+
+  it("throws when line quantity is zero", () => {
+    expect(() =>
+      validateInvoice({ ...validInvoice, lines: [{ ...baseLine, quantity: 0 }] })
+    ).toThrow(/quantity/i);
+  });
+
+  it("throws when line quantity is negative", () => {
+    expect(() =>
+      validateInvoice({ ...validInvoice, lines: [{ ...baseLine, quantity: -1 }] })
+    ).toThrow(/quantity/i);
+  });
+
+  it("throws when line unitPrice is zero", () => {
+    expect(() =>
+      validateInvoice({ ...validInvoice, lines: [{ ...baseLine, unitPrice: 0 }] })
+    ).toThrow(/unitPrice/i);
+  });
+
+  it("throws when line total is negative", () => {
+    expect(() =>
+      validateInvoice({ ...validInvoice, lines: [{ ...baseLine, total: -5 }] })
+    ).toThrow(/total/i);
+  });
+
+  it("throws when vatRate is invalid", () => {
+    expect(() =>
+      validateInvoice({ ...validInvoice, lines: [{ ...baseLine, vatRate: 15 }] })
+    ).toThrow(/vatRate/i);
+  });
+
+  it("accepts vatRate of 0", () => {
+    expect(() =>
+      validateInvoice({ ...validInvoice, lines: [{ ...baseLine, vatRate: 0 }] })
+    ).not.toThrow();
+  });
+
+  it("accepts all valid vatRates", () => {
+    for (const rate of [0, 4, 10, 21]) {
+      expect(() =>
+        validateInvoice({ ...validInvoice, lines: [{ ...baseLine, vatRate: rate }] })
+      ).not.toThrow();
+    }
   });
 });
 

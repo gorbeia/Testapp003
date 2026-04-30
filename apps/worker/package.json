@@ -5,6 +5,10 @@
   "dependencies": {
     "axios": "^1.7.2",
     "pg": "^8.11.0",
+    "pino": "^9.3.2",
     "@tbai/core": "workspace:*"
+  },
+  "devDependencies": {
+    "pino-pretty": "^11.2.1"
   }
 }

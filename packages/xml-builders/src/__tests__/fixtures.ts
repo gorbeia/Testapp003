@@ -3,6 +3,7 @@ import type { Invoice } from "@tbai/core";
 export const testInvoice: Invoice = {
   id: "test-001",
   tenantId: "tenant-1",
+  series: "A",
   number: "F-2026-001",
   issueDate: "2026-01-15",
   issuer: { name: "Test Empresa SL", nif: "A12345678" },

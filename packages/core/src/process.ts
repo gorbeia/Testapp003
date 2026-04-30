@@ -20,6 +20,7 @@ export async function processInvoice(input: {
   const record: InvoiceRecord = {
     id: input.invoice.id,
     tenantId: input.invoice.tenantId,
+    series: input.invoice.series,
     number: input.invoice.number,
     hash,
     previousHash: input.previous?.hash,

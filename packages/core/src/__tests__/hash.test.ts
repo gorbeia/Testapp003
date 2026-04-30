@@ -32,6 +32,29 @@ describe("computeHash", () => {
   });
 });
 
+describe("per-series hash chain isolation", () => {
+  it("series A and series R maintain independent chains", () => {
+    // Simulate series A: invoices A-001, A-002
+    const hashA1 = computeHash({ invoiceNumber: "A-001", issueDate: "2026-01-01", totalAmount: 100 });
+    const hashA2 = computeHash({ invoiceNumber: "A-002", issueDate: "2026-01-02", totalAmount: 200, previousHash: hashA1 });
+
+    // Simulate series R: invoices R-001, R-002 (independent chain, no shared state)
+    const hashR1 = computeHash({ invoiceNumber: "R-001", issueDate: "2026-01-01", totalAmount: -100 });
+    const hashR2 = computeHash({ invoiceNumber: "R-002", issueDate: "2026-01-02", totalAmount: -200, previousHash: hashR1 });
+
+    // Chains are independent: series A does not reference series R
+    expect(hashA2).not.toBe(hashR2);
+
+    // Each chain is internally consistent
+    const hashA2_reproduced = computeHash({ invoiceNumber: "A-002", issueDate: "2026-01-02", totalAmount: 200, previousHash: hashA1 });
+    expect(hashA2).toBe(hashA2_reproduced);
+
+    // A chain with cross-series contamination would produce a different hash
+    const hashA2_wrongChain = computeHash({ invoiceNumber: "A-002", issueDate: "2026-01-02", totalAmount: 200, previousHash: hashR1 });
+    expect(hashA2).not.toBe(hashA2_wrongChain);
+  });
+});
+
 describe("computeTicketBaiHash", () => {
   const base = {
     issuerNif: "12345678A",
