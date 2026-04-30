@@ -1,0 +1,25 @@
+{
+  "name": "tbai-test-harness",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run tests/e2e",
+    "test:integration": "vitest run tests/integration",
+    "test:load": "vitest run tests/load",
+    "db:up": "docker compose up -d && sleep 5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0",
+    "pg": "^8.11.0",
+    "uuid": "^9.0.0",
+    "@types/uuid": "^9.0.0"
+  }
+}
