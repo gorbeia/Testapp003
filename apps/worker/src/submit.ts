@@ -12,12 +12,8 @@ export async function submitToHacienda(xml: string, endpoint: string, certAgent:
   return res.data;
 }
 
-export function simulateHaciendaResponse(xml: string) {
-  const crypto = require("crypto");
-  return {
-    status: "ACCEPTED",
-    ticketId: "SANDBOX-" + crypto.randomUUID(),
-    receivedAt: new Date().toISOString(),
-    warnings: []
-  };
+export function simulateHaciendaResponse(_xml: string): string {
+  const { randomUUID } = require("crypto");
+  const ticketId = `SANDBOX-${randomUUID()}`;
+  return `<RespuestaTicketBai><Resultado>Aceptado</Resultado><IdTicketBai>${ticketId}</IdTicketBai></RespuestaTicketBai>`;
 }
